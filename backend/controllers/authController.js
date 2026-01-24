@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const { validationResult } = require('express-validator');
 
 const generateToken = (id) => {
@@ -131,10 +132,19 @@ exports.login = async (req, res) => {
 // @access  Private
 exports.getMe = async (req, res) => {
   try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+
     const user = await User.findById(req.user.id).select('-password');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
     res.json(user);
   } catch (error) {
-    console.error(error);
+    console.error('Error in getMe:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

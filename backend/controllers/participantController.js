@@ -228,15 +228,21 @@ exports.submitResponse = async (req, res) => {
       });
     }
 
-    // Calculate points (simplified - in real app, compare with correct answer)
+    // Calculate points
     const phaseQuestion = inject.phases.find(
       p => p.phaseNumber === phaseNumber
     );
 
     let pointsEarned = 0;
-    if (phaseQuestion && phaseQuestion.questionType === 'multiple') {
-      // Simplified scoring - in real app, implement proper scoring logic
+    if (phaseQuestion) {
       pointsEarned = calculatePoints(phaseQuestion, answer);
+      console.log('Score calculation:', {
+        phaseNumber,
+        questionType: phaseQuestion.questionType,
+        answer,
+        correctAnswer: phaseQuestion.correctAnswer,
+        pointsEarned
+      });
     }
 
     // Add response
@@ -401,12 +407,29 @@ exports.updateParticipantStatus = async (req, res) => {
 
 // Helper function to calculate points
 function calculatePoints(question, answer) {
-  // Simplified scoring - implement your own logic
-  if (question.questionType === 'multiple') {
-    // Check if answer matches correct answer
-    const isCorrect = JSON.stringify(answer.sort()) === JSON.stringify(question.correctAnswer.sort());
+  if (question.questionType === 'single') {
+    // For single choice, answer is a string (option ID)
+    // Check if the answer matches the correct answer
+    const isCorrect = question.correctAnswer.includes(answer);
     return isCorrect ? question.maxPoints || 10 : 0;
   }
-  
-  return question.maxPoints || 5; // Default points for text/single choice
+
+  if (question.questionType === 'multiple') {
+    // For multiple choice, answer is an array of option IDs
+    // Check if all selected answers are correct and no correct answers are missed
+    if (!Array.isArray(answer)) {
+      return 0;
+    }
+
+    // Sort both arrays for comparison
+    const sortedAnswer = [...answer].sort();
+    const sortedCorrect = [...question.correctAnswer].sort();
+
+    // Check if arrays match exactly
+    const isCorrect = JSON.stringify(sortedAnswer) === JSON.stringify(sortedCorrect);
+    return isCorrect ? question.maxPoints || 10 : 0;
+  }
+
+  // For text questions or other types
+  return question.maxPoints || 5;
 }

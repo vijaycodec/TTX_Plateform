@@ -7,7 +7,7 @@ const ArtifactSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['log', 'network', 'screenshot', 'document', 'other'],
+    enum: ['log', 'alert', 'network', 'screenshot', 'document', 'other'],
     default: 'log'
   },
   content: {
@@ -17,6 +17,9 @@ const ArtifactSchema = new mongoose.Schema({
   metadata: {
     timestamp: String,
     source: String,
+    severity: String,
+    eventId: String,
+    alertId: String,
     additional: mongoose.Schema.Types.Mixed
   },
   order: Number

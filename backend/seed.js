@@ -34,7 +34,7 @@ const seedDatabase = async () => {
     // Create user directly in collection (bypass model)
     const user = {
       username: 'facilitator',
-      email: 'facilitator@example.com',
+      email: 'facilitator@codec.com',
       password: hashedPassword,
       role: 'facilitator',
       createdAt: new Date()
