@@ -1,0 +1,412 @@
+const Exercise = require('../models/Exercise');
+const Participant = require('../models/Participant');
+const { v4: uuidv4 } = require('uuid');
+
+// @desc    Join exercise as participant
+// @route   POST /api/participants/join
+// @access  Public
+// @desc    Join exercise as participant
+// @route   POST /api/participants/join
+// @access  Public
+exports.joinExercise = async (req, res) => {
+  try {
+    console.log('=== JOIN EXERCISE REQUEST ===');
+    console.log('Request body:', req.body);
+    const { accessCode, name, team } = req.body;
+
+    if (!accessCode) {
+      console.log('No access code provided');
+      return res.status(400).json({ 
+        message: 'Access code is required' 
+      });
+    }
+
+    // Find exercise by access code
+    console.log('Looking for exercise with access code:', accessCode);
+    const exercise = await Exercise.findOne({ 
+      accessCode: accessCode.toUpperCase(),
+      status: { $in: ['active', 'draft'] }
+    });
+
+    if (!exercise) {
+      console.log('Exercise not found with access code:', accessCode);
+      return res.status(404).json({ 
+        message: 'Exercise not found or not active' 
+      });
+    }
+
+    console.log('Exercise found:', exercise.title);
+    console.log('Exercise ID:', exercise._id);
+    console.log('Exercise status:', exercise.status);
+
+    // Check if exercise is full
+    const participantCount = await Participant.countDocuments({ 
+      exercise: exercise._id,
+      status: { $in: ['active', 'waiting'] }
+    });
+
+    console.log('Current participants:', participantCount);
+    console.log('Max participants:', exercise.maxParticipants);
+
+    if (participantCount >= exercise.maxParticipants) {
+      console.log('Exercise is full');
+      return res.status(400).json({ 
+        message: 'Exercise is full. Maximum participants reached.' 
+      });
+    }
+
+    // Generate unique participant ID
+    const { v4: uuidv4 } = require('uuid');
+    const participantId = uuidv4();
+
+    console.log('Creating participant with ID:', participantId);
+
+    const participant = await Participant.create({
+      participantId,
+      name: name || 'Anonymous',
+      team: team || 'Individual',
+      exercise: exercise._id,
+      status: 'waiting'
+    });
+
+    console.log('Participant created successfully:', participant.participantId);
+
+    res.status(201).json({
+      success: true,
+      participant: {
+        participantId: participant.participantId,
+        name: participant.name,
+        team: participant.team,
+        exerciseId: exercise._id,
+        exerciseTitle: exercise.title,
+        status: participant.status
+      }
+    });
+
+    console.log('=== JOIN EXERCISE COMPLETE ===');
+
+  } catch (error) {
+    console.error('❌ Error in joinExercise:', error);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      message: 'Server error',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+};
+
+// @desc    Get exercise data for participant
+// @route   GET /api/participants/exercise/:exerciseId
+// @access  Public (with participantId in body)
+exports.getExerciseData = async (req, res) => {
+  try {
+    const { exerciseId } = req.params;
+    const { participantId } = req.body;
+
+    console.log('Getting exercise data for:', { exerciseId, participantId });
+
+    const exercise = await Exercise.findById(exerciseId);
+    if (!exercise) {
+      return res.status(404).json({ message: 'Exercise not found' });
+    }
+
+    const participant = await Participant.findOne({
+      participantId,
+      exercise: exerciseId
+    });
+
+    if (!participant) {
+      return res.status(404).json({ message: 'Participant not found' });
+    }
+
+    // Get current inject - find the active inject or the one participant is on
+    let currentInject = exercise.injects.find(
+      inject => inject.injectNumber === participant.currentInject && inject.isActive
+    );
+
+    // If no current inject, get the latest active inject
+    if (!currentInject) {
+      const activeInjects = exercise.injects.filter(inject => inject.isActive);
+      currentInject = activeInjects.length > 0 ? activeInjects[activeInjects.length - 1] : null;
+    }
+
+    console.log('Current inject:', currentInject?.title);
+    console.log('Inject has phases:', currentInject?.phases?.length || 0);
+    console.log('Participant current phase:', participant.currentPhase || 1);
+
+    // Get only active injects
+    const activeInjects = exercise.injects.filter(
+      inject => inject.isActive
+    );
+
+    // Get phases from current inject
+    const phases = currentInject ? currentInject.phases : [];
+
+    // Get current phase number (default to 1 if not set)
+    const currentPhase = participant.currentPhase || 1;
+
+    res.json({
+      exercise: {
+        id: exercise._id,
+        title: exercise.title,
+        description: exercise.description,
+        settings: exercise.settings
+      },
+      participant: {
+        participantId: participant.participantId,
+        name: participant.name,
+        currentInject: participant.currentInject,
+        currentPhase: currentPhase,
+        totalScore: participant.totalScore,
+        status: participant.status,
+        responses: participant.responses || []
+      },
+      currentInject: currentInject || null,
+      activeInjects,
+      phases,
+      currentPhaseNumber: currentPhase,
+      responsesOpen: currentInject ? currentInject.responsesOpen : false,
+      phaseProgressionLocked: currentInject ? currentInject.phaseProgressionLocked : false
+    });
+  } catch (error) {
+    console.error('Error in getExerciseData:', error);
+    res.status(500).json({
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Submit response
+// @route   POST /api/participants/submit-response
+// @access  Public (with participantId in body)
+exports.submitResponse = async (req, res) => {
+  try {
+    const { participantId, exerciseId, injectNumber, phaseNumber, questionIndex, answer } = req.body;
+
+    // Validate input
+    if (!participantId || !exerciseId || !injectNumber || !phaseNumber || questionIndex === undefined) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
+
+    const exercise = await Exercise.findById(exerciseId);
+    if (!exercise) {
+      return res.status(404).json({ message: 'Exercise not found' });
+    }
+
+    const participant = await Participant.findOne({ 
+      participantId,
+      exercise: exerciseId 
+    });
+
+    if (!participant) {
+      return res.status(404).json({ message: 'Participant not found' });
+    }
+
+    // Check if responses are open for this inject
+    const inject = exercise.injects.find(
+      inj => inj.injectNumber === injectNumber
+    );
+
+    if (!inject || !inject.responsesOpen) {
+      return res.status(400).json({ 
+        message: 'Responses are not open for this inject' 
+      });
+    }
+
+    // Check if participant has already answered this question
+    const existingResponse = participant.responses.find(
+      resp => resp.injectNumber === injectNumber && 
+              resp.phaseNumber === phaseNumber && 
+              resp.questionIndex === questionIndex
+    );
+
+    if (existingResponse) {
+      return res.status(400).json({ 
+        message: 'Response already submitted for this question' 
+      });
+    }
+
+    // Calculate points (simplified - in real app, compare with correct answer)
+    const phaseQuestion = inject.phases.find(
+      p => p.phaseNumber === phaseNumber
+    );
+
+    let pointsEarned = 0;
+    if (phaseQuestion && phaseQuestion.questionType === 'multiple') {
+      // Simplified scoring - in real app, implement proper scoring logic
+      pointsEarned = calculatePoints(phaseQuestion, answer);
+    }
+
+    // Add response
+    participant.responses.push({
+      injectNumber,
+      phaseNumber,
+      questionIndex,
+      answer,
+      pointsEarned
+    });
+
+    // Update total score
+    participant.totalScore += pointsEarned;
+    await participant.save();
+
+    // Emit socket event for real-time score updates
+    req.io.to(`exercise-${exerciseId}`).emit('scoreUpdate', {
+      participantId,
+      name: participant.name,
+      totalScore: participant.totalScore,
+      injectNumber,
+      pointsEarned
+    });
+
+    res.json({
+      success: true,
+      pointsEarned,
+      totalScore: participant.totalScore
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// @desc    Move to next phase
+// @route   POST /api/participants/next-phase
+// @access  Public (with participantId in body)
+exports.nextPhase = async (req, res) => {
+  try {
+    const { participantId, exerciseId, currentInjectNumber, currentPhaseNumber } = req.body;
+
+    console.log('Next phase request:', { participantId, exerciseId, currentInjectNumber, currentPhaseNumber });
+
+    const participant = await Participant.findOne({
+      participantId,
+      exercise: exerciseId
+    });
+
+    if (!participant) {
+      return res.status(404).json({ message: 'Participant not found' });
+    }
+
+    const exercise = await Exercise.findById(exerciseId);
+    if (!exercise) {
+      return res.status(404).json({ message: 'Exercise not found' });
+    }
+
+    // Find the current inject
+    const currentInject = exercise.injects.find(
+      inj => inj.injectNumber === currentInjectNumber
+    );
+
+    if (!currentInject) {
+      return res.status(404).json({ message: 'Current inject not found' });
+    }
+
+    // Check if phase progression is locked by facilitator
+    if (currentInject.phaseProgressionLocked) {
+      return res.status(403).json({
+        message: 'Phase progression is currently locked. Please wait for the facilitator to unlock it.',
+        locked: true
+      });
+    }
+
+    // Check if there's a next phase
+    const nextPhaseNumber = currentPhaseNumber + 1;
+    const totalPhases = currentInject.phases.length;
+
+    if (nextPhaseNumber > totalPhases) {
+      // No more phases in this inject
+      return res.json({
+        success: true,
+        message: 'All phases completed for this inject',
+        allPhasesCompleted: true,
+        currentPhase: currentPhaseNumber
+      });
+    }
+
+    // Update participant's current phase
+    participant.currentPhase = nextPhaseNumber;
+    await participant.save();
+
+    console.log(`Participant ${participantId} moved to phase ${nextPhaseNumber}`);
+
+    res.json({
+      success: true,
+      currentPhase: nextPhaseNumber,
+      totalPhases: totalPhases,
+      allPhasesCompleted: false
+    });
+
+  } catch (error) {
+    console.error('Error in nextPhase:', error);
+    res.status(500).json({
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Update participant status (admit/reject)
+// @route   PUT /api/participants/:participantId/status
+// @access  Private (Facilitator)
+exports.updateParticipantStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+    const { participantId } = req.params;
+
+    const participant = await Participant.findOne({ participantId });
+    if (!participant) {
+      return res.status(404).json({ message: 'Participant not found' });
+    }
+
+    // Get exercise to verify facilitator
+    const exercise = await Exercise.findById(participant.exercise);
+    if (!exercise) {
+      return res.status(404).json({ message: 'Exercise not found' });
+    }
+
+    // Check if user is facilitator
+    if (exercise.facilitator.toString() !== req.user.id.toString()) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
+    participant.status = status;
+    
+    // If admitting, set current inject to 1
+    if (status === 'active') {
+      participant.currentInject = 1;
+    }
+
+    await participant.save();
+
+    // Emit socket event
+    if (status === 'active') {
+      req.io.to(`participant-${participantId}`).emit('participantAdmitted', {
+        exerciseId: exercise._id,
+        exerciseTitle: exercise.title
+      });
+    }
+
+    res.json({
+      success: true,
+      participant
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Helper function to calculate points
+function calculatePoints(question, answer) {
+  // Simplified scoring - implement your own logic
+  if (question.questionType === 'multiple') {
+    // Check if answer matches correct answer
+    const isCorrect = JSON.stringify(answer.sort()) === JSON.stringify(question.correctAnswer.sort());
+    return isCorrect ? question.maxPoints || 10 : 0;
+  }
+  
+  return question.maxPoints || 5; // Default points for text/single choice
+}
