@@ -29,12 +29,11 @@ const UserSchema = new mongoose.Schema({
   }
 });
 
-// REMOVED the pre-save hook - we'll handle hashing in the controller
-
 // Compare password method
+const bcrypt = require('bcryptjs');
+
 UserSchema.methods.comparePassword = async function(candidatePassword) {
-  // We'll implement this in authController instead
-  return candidatePassword === this.password; // Temporary - we'll fix in auth
+  return await bcrypt.compare(candidatePassword, this.password);
 };
 
 module.exports = mongoose.model('User', UserSchema);

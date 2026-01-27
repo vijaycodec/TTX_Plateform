@@ -71,6 +71,22 @@ exports.joinExercise = async (req, res) => {
 
     console.log('Participant created successfully:', participant.participantId);
 
+    // Emit socket event to notify facilitator
+    if (req.io) {
+      const roomName = `exercise-${exercise._id}`;
+      req.io.to(roomName).emit('participantJoined', {
+        participant: {
+          participantId: participant.participantId,
+          name: participant.name,
+          team: participant.team,
+          status: participant.status,
+          joinedAt: participant.joinedAt
+        }
+      });
+      console.log(`📡 Socket event emitted: participantJoined to room ${roomName}`);
+      console.log(`  ➡️ Participant: ${participant.name} (${participant.participantId})`);
+    }
+
     res.status(201).json({
       success: true,
       participant: {
@@ -228,20 +244,24 @@ exports.submitResponse = async (req, res) => {
       });
     }
 
-    // Calculate points
+    // Calculate points and magnitude
     const phaseQuestion = inject.phases.find(
       p => p.phaseNumber === phaseNumber
     );
 
     let pointsEarned = 0;
+    let magnitude = 'least_effective';
     if (phaseQuestion) {
-      pointsEarned = calculatePoints(phaseQuestion, answer);
+      const result = calculatePointsAndMagnitude(phaseQuestion, answer);
+      pointsEarned = result.pointsEarned;
+      magnitude = result.magnitude;
       console.log('Score calculation:', {
         phaseNumber,
         questionType: phaseQuestion.questionType,
         answer,
         correctAnswer: phaseQuestion.correctAnswer,
-        pointsEarned
+        pointsEarned,
+        magnitude
       });
     }
 
@@ -251,7 +271,8 @@ exports.submitResponse = async (req, res) => {
       phaseNumber,
       questionIndex,
       answer,
-      pointsEarned
+      pointsEarned,
+      magnitude
     });
 
     // Update total score
@@ -259,17 +280,24 @@ exports.submitResponse = async (req, res) => {
     await participant.save();
 
     // Emit socket event for real-time score updates
-    req.io.to(`exercise-${exerciseId}`).emit('scoreUpdate', {
-      participantId,
-      name: participant.name,
-      totalScore: participant.totalScore,
-      injectNumber,
-      pointsEarned
-    });
+    if (req.io) {
+      const roomName = `exercise-${exerciseId}`;
+      req.io.to(roomName).emit('scoreUpdate', {
+        participantId,
+        name: participant.name,
+        totalScore: participant.totalScore,
+        injectNumber,
+        pointsEarned,
+        magnitude
+      });
+      console.log(`📡 Socket event emitted: scoreUpdate to room ${roomName}`);
+      console.log(`  ➡️ ${participant.name} earned ${pointsEarned} points (magnitude: ${magnitude}, total: ${participant.totalScore})`);
+    }
 
     res.json({
       success: true,
       pointsEarned,
+      magnitude,
       totalScore: participant.totalScore
     });
   } catch (error) {
@@ -387,12 +415,34 @@ exports.updateParticipantStatus = async (req, res) => {
 
     await participant.save();
 
-    // Emit socket event
+    // Emit socket event to participant
     if (status === 'active') {
-      req.io.to(`participant-${participantId}`).emit('participantAdmitted', {
+      const participantRoom = `participant-${participantId}`;
+      req.io.to(participantRoom).emit('participantAdmitted', {
         exerciseId: exercise._id,
         exerciseTitle: exercise.title
       });
+      console.log(`📡 Socket event emitted: participantAdmitted to room ${participantRoom}`);
+      console.log(`  ➡️ Participant: ${participant.name} admitted to ${exercise.title}`);
+    }
+
+    // Emit socket event to facilitator to update participant list
+    if (req.io) {
+      const exerciseRoom = `exercise-${exercise._id}`;
+      req.io.to(exerciseRoom).emit('participantStatusUpdated', {
+        participantId,
+        status,
+        participant: {
+          participantId: participant.participantId,
+          name: participant.name,
+          team: participant.team,
+          status: participant.status,
+          currentInject: participant.currentInject,
+          totalScore: participant.totalScore
+        }
+      });
+      console.log(`📡 Socket event emitted: participantStatusUpdated to room ${exerciseRoom}`);
+      console.log(`  ➡️ Participant: ${participant.name} status = ${status}`);
     }
 
     res.json({
@@ -405,31 +455,57 @@ exports.updateParticipantStatus = async (req, res) => {
   }
 };
 
-// Helper function to calculate points
-function calculatePoints(question, answer) {
+// Helper function to calculate points and magnitude
+function calculatePointsAndMagnitude(question, answer) {
   if (question.questionType === 'single') {
     // For single choice, answer is a string (option ID)
-    // Check if the answer matches the correct answer
-    const isCorrect = question.correctAnswer.includes(answer);
-    return isCorrect ? question.maxPoints || 10 : 0;
+    // Find the selected option to get its points and magnitude
+    const selectedOption = question.options?.find(opt => opt.id === answer);
+    if (selectedOption) {
+      return {
+        pointsEarned: selectedOption.points || 0,
+        magnitude: selectedOption.magnitude || 'least_effective'
+      };
+    }
+    return { pointsEarned: 0, magnitude: 'least_effective' };
   }
 
   if (question.questionType === 'multiple') {
     // For multiple choice, answer is an array of option IDs
-    // Check if all selected answers are correct and no correct answers are missed
+    // Calculate total points from all selected options
     if (!Array.isArray(answer)) {
-      return 0;
+      return { pointsEarned: 0, magnitude: 'least_effective' };
     }
 
-    // Sort both arrays for comparison
-    const sortedAnswer = [...answer].sort();
-    const sortedCorrect = [...question.correctAnswer].sort();
+    let totalPoints = 0;
+    let magnitudes = [];
 
-    // Check if arrays match exactly
-    const isCorrect = JSON.stringify(sortedAnswer) === JSON.stringify(sortedCorrect);
-    return isCorrect ? question.maxPoints || 10 : 0;
+    answer.forEach(optionId => {
+      const option = question.options?.find(opt => opt.id === optionId);
+      if (option) {
+        totalPoints += (option.points || 0);
+        magnitudes.push(option.magnitude || 'least_effective');
+      }
+    });
+
+    // Determine overall magnitude based on total points
+    let overallMagnitude = 'least_effective';
+    if (totalPoints >= 9) {
+      overallMagnitude = 'most_effective';
+    } else if (totalPoints >= 7) {
+      overallMagnitude = 'effective';
+    } else if (totalPoints >= 5) {
+      overallMagnitude = 'moderately_effective';
+    } else if (totalPoints >= 2) {
+      overallMagnitude = 'somewhat_effective';
+    }
+
+    return {
+      pointsEarned: totalPoints,
+      magnitude: overallMagnitude
+    };
   }
 
   // For text questions or other types
-  return question.maxPoints || 5;
+  return { pointsEarned: question.maxPoints || 5, magnitude: 'moderately_effective' };
 }

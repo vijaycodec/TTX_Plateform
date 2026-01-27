@@ -258,11 +258,15 @@ exports.releaseInject = async (req, res) => {
 
     // Emit socket event
     if (req.io) {
-      req.io.to(`exercise-${exerciseId}`).emit('injectReleased', {
-        injectNumber,
+      const roomName = `exercise-${exerciseId}`;
+      const eventData = {
+        injectNumber: parseInt(injectNumber),
         inject: releasedInject
-      });
-      console.log('Socket event emitted for inject release');
+      };
+      req.io.to(roomName).emit('injectReleased', eventData);
+      console.log(`📡 Socket event emitted: injectReleased to room ${roomName}`);
+      console.log(`  ➡️ Inject ${injectNumber} released`);
+      console.log(`  ➡️ Event data:`, eventData);
     }
 
     res.json({
@@ -320,10 +324,15 @@ exports.toggleResponses = async (req, res) => {
 
     // Emit socket event
     if (req.io) {
-      req.io.to(`exercise-${exerciseId}`).emit('responsesToggled', {
-        injectNumber,
-        responsesOpen
-      });
+      const roomName = `exercise-${exerciseId}`;
+      const eventData = {
+        injectNumber: parseInt(injectNumber),
+        responsesOpen: responsesOpen
+      };
+      req.io.to(roomName).emit('responsesToggled', eventData);
+      console.log(`📡 Socket event emitted: responsesToggled to room ${roomName}`);
+      console.log(`  ➡️ Inject ${injectNumber}: responsesOpen = ${responsesOpen}`);
+      console.log(`  ➡️ Event data:`, eventData);
     }
 
     res.json({
@@ -382,11 +391,15 @@ exports.togglePhaseProgression = async (req, res) => {
 
     // Emit socket event to all participants
     if (req.io) {
-      req.io.to(`exercise-${exerciseId}`).emit('phaseProgressionToggled', {
-        injectNumber,
-        phaseProgressionLocked
-      });
-      console.log('Socket event emitted for phase progression toggle');
+      const roomName = `exercise-${exerciseId}`;
+      const eventData = {
+        injectNumber: parseInt(injectNumber),
+        phaseProgressionLocked: phaseProgressionLocked
+      };
+      req.io.to(roomName).emit('phaseProgressionToggled', eventData);
+      console.log(`📡 Socket event emitted: phaseProgressionToggled to room ${roomName}`);
+      console.log(`  ➡️ Inject ${injectNumber}: phaseProgressionLocked = ${phaseProgressionLocked}`);
+      console.log(`  ➡️ Event data:`, eventData);
     }
 
     res.json({
@@ -478,7 +491,7 @@ exports.getScores = async (req, res) => {
 
 function calculateInjectScores(responses) {
   const injectScores = {};
-  
+
   responses.forEach(response => {
     const injectNum = response.injectNumber;
     if (!injectScores[injectNum]) {
@@ -489,3 +502,83 @@ function calculateInjectScores(responses) {
 
   return injectScores;
 }
+
+// @desc    Delete exercise
+// @route   DELETE /api/exercises/:id
+// @access  Private (Facilitator)
+exports.deleteExercise = async (req, res) => {
+  try {
+    const exercise = await Exercise.findById(req.params.id);
+
+    if (!exercise) {
+      return res.status(404).json({ message: 'Exercise not found' });
+    }
+
+    // Check if user is facilitator
+    if (exercise.facilitator.toString() !== req.user.id.toString()) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
+    // Delete all associated participants
+    await Participant.deleteMany({ exercise: exercise._id });
+
+    // Delete the exercise
+    await Exercise.findByIdAndDelete(req.params.id);
+
+    res.json({
+      success: true,
+      message: 'Exercise and associated participants deleted successfully'
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// @desc    Delete inject
+// @route   DELETE /api/exercises/:exerciseId/injects/:injectNumber
+// @access  Private (Facilitator)
+exports.deleteInject = async (req, res) => {
+  try {
+    const { exerciseId, injectNumber } = req.params;
+
+    const exercise = await Exercise.findById(exerciseId);
+
+    if (!exercise) {
+      return res.status(404).json({ message: 'Exercise not found' });
+    }
+
+    // Check if user is facilitator
+    if (exercise.facilitator.toString() !== req.user.id.toString()) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
+    const injectIndex = exercise.injects.findIndex(
+      inj => inj.injectNumber === parseInt(injectNumber)
+    );
+
+    if (injectIndex === -1) {
+      return res.status(404).json({ message: 'Inject not found' });
+    }
+
+    // Remove the inject
+    exercise.injects.splice(injectIndex, 1);
+
+    // Renumber remaining injects
+    exercise.injects.forEach((inject, index) => {
+      inject.injectNumber = index + 1;
+      inject.order = index + 1;
+    });
+
+    await exercise.save();
+
+    res.json({
+      success: true,
+      message: 'Inject deleted and remaining injects renumbered successfully',
+      injects: exercise.injects
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};

@@ -7,6 +7,8 @@ const {
   updateExercise,
   addInject,
   updateInject,
+  deleteExercise,
+  deleteInject,
   releaseInject,
   toggleResponses,
   togglePhaseProgression,
@@ -27,13 +29,15 @@ router.route('/my')
 
 router.route('/:id')
   .get(getExercise)
-  .put(updateExercise);
+  .put(updateExercise)
+  .delete(deleteExercise);
 
 router.route('/:id/injects')
   .post(addInject);
 
 router.route('/:exerciseId/injects/:injectNumber')
-  .put(updateInject);
+  .put(updateInject)
+  .delete(deleteInject);
 
 router.route('/:id/release-inject')
   .post(releaseInject);

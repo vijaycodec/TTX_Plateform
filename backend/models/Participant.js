@@ -9,6 +9,11 @@ const ResponseSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  magnitude: {
+    type: String,
+    enum: ['most_effective', 'effective', 'moderately_effective', 'somewhat_effective', 'least_effective'],
+    default: 'least_effective'
+  },
   submittedAt: {
     type: Date,
     default: Date.now

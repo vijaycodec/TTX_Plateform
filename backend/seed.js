@@ -33,7 +33,7 @@ const seedDatabase = async () => {
 
     // Create user directly in collection (bypass model)
     const user = {
-      username: 'facilitator',
+      username: 'Vijay Pratap',
       email: 'facilitator@codec.com',
       password: hashedPassword,
       role: 'facilitator',
@@ -116,11 +116,11 @@ Rule: IT_to_OT_Management`,
               question: 'How would you triage this event?',
               questionType: 'single',
               options: [
-                { id: 'A', text: 'P4 - Informational: Classify as routine administrative activity and continue monitoring', points: 0 },
-                { id: 'B', text: 'P3 - Low Severity: Treat as a procedural deviation and seek clarification from IT administrators', points: 2 },
-                { id: 'C', text: 'P2 - Medium Severity: Classify as suspicious identity misuse involving OT access and initiate investigation', points: 10 },
-                { id: 'D', text: 'P1 - High Severity: Classify as a high-severity incident due to unauthorized IT access into OT systems', points: 8 },
-                { id: 'E', text: 'P0 - Critical: Declare a critical incident due to potential compromise of privileged credentials with access to SCADA', points: 5 }
+                { id: 'A', text: 'P4 - Informational: Classify as routine administrative activity and continue monitoring', points: 0, magnitude: 'least_effective' },
+                { id: 'B', text: 'P3 - Low Severity: Treat as a procedural deviation and seek clarification from IT administrators', points: 2, magnitude: 'somewhat_effective' },
+                { id: 'C', text: 'P2 - Medium Severity: Classify as suspicious identity misuse involving OT access and initiate investigation', points: 10, magnitude: 'most_effective' },
+                { id: 'D', text: 'P1 - High Severity: Classify as a high-severity incident due to unauthorized IT access into OT systems', points: 8, magnitude: 'effective' },
+                { id: 'E', text: 'P0 - Critical: Declare a critical incident due to potential compromise of privileged credentials with access to SCADA', points: 5, magnitude: 'moderately_effective' }
               ],
               correctAnswer: ['C'],
               maxPoints: 10,
@@ -132,11 +132,11 @@ Rule: IT_to_OT_Management`,
               question: 'What would you do to investigate further at this stage? (Select all that apply)',
               questionType: 'multiple',
               options: [
-                { id: 'A', text: 'Review detailed Active Directory logs to reconstruct the full activity timeline', points: 3 },
-                { id: 'B', text: 'Correlate firewall and network logs to identify which OT assets were accessed', points: 3 },
-                { id: 'C', text: 'Validate whether any configuration or data changes occurred on SCADA servers', points: 2 },
-                { id: 'D', text: 'Check for similar activity involving other privileged accounts', points: 2 },
-                { id: 'E', text: 'Delay investigation until an operational impact is observed', points: 0 }
+                { id: 'A', text: 'Review detailed Active Directory logs to reconstruct the full activity timeline', points: 3, magnitude: 'somewhat_effective' },
+                { id: 'B', text: 'Correlate firewall and network logs to identify which OT assets were accessed', points: 3, magnitude: 'somewhat_effective' },
+                { id: 'C', text: 'Validate whether any configuration or data changes occurred on SCADA servers', points: 2, magnitude: 'somewhat_effective' },
+                { id: 'D', text: 'Check for similar activity involving other privileged accounts', points: 2, magnitude: 'somewhat_effective' },
+                { id: 'E', text: 'Delay investigation until an operational impact is observed', points: 0, magnitude: 'least_effective' }
               ],
               correctAnswer: ['A', 'B', 'C', 'D'],
               maxPoints: 10,
@@ -148,10 +148,10 @@ Rule: IT_to_OT_Management`,
               question: 'What immediate actions should be taken?',
               questionType: 'single',
               options: [
-                { id: 'A', text: 'Immediately disable the it_admin_ops account', points: 10 },
-                { id: 'B', text: 'Continue monitoring without taking action', points: 0 },
-                { id: 'C', text: 'Call the IT department to verify the activity', points: 5 },
-                { id: 'D', text: 'Shut down all OT systems as a precaution', points: 2 }
+                { id: 'A', text: 'Immediately disable the it_admin_ops account', points: 10, magnitude: 'most_effective' },
+                { id: 'B', text: 'Continue monitoring without taking action', points: 0, magnitude: 'least_effective' },
+                { id: 'C', text: 'Call the IT department to verify the activity', points: 5, magnitude: 'moderately_effective' },
+                { id: 'D', text: 'Shut down all OT systems as a precaution', points: 2, magnitude: 'somewhat_effective' }
               ],
               correctAnswer: ['A'],
               maxPoints: 10,
@@ -257,10 +257,10 @@ Privileges Assigned:
               question: 'Based on the artifacts provided, what is the PRIMARY security concern at this stage?',
               questionType: 'single',
               options: [
-                { id: 'A', text: 'Normal administrative activity', points: 0 },
-                { id: 'B', text: 'Potential lateral movement and privilege escalation by a compromised account', points: 10 },
-                { id: 'C', text: 'Network connectivity issues', points: 0 },
-                { id: 'D', text: 'PowerShell configuration error', points: 2 }
+                { id: 'A', text: 'Normal administrative activity', points: 0, magnitude: 'least_effective' },
+                { id: 'B', text: 'Potential lateral movement and privilege escalation by a compromised account', points: 10, magnitude: 'most_effective' },
+                { id: 'C', text: 'Network connectivity issues', points: 0, magnitude: 'least_effective' },
+                { id: 'D', text: 'PowerShell configuration error', points: 2, magnitude: 'somewhat_effective' }
               ],
               correctAnswer: ['B'],
               maxPoints: 10,
@@ -272,11 +272,11 @@ Privileges Assigned:
               question: 'Which of the following indicators suggest malicious activity? (Select all that apply)',
               questionType: 'multiple',
               options: [
-                { id: 'A', text: 'Creation of a new local admin account (tempadmin) via PowerShell', points: 3 },
-                { id: 'B', text: 'Logon to systems where j.smith has no historical access', points: 3 },
-                { id: 'C', text: 'Assignment of sensitive privileges (SeDebugPrivilege, SeImpersonatePrivilege)', points: 3 },
-                { id: 'D', text: 'Network logon from 192.0.2.154', points: 1 },
-                { id: 'E', text: 'All of the above', points: 0 }
+                { id: 'A', text: 'Creation of a new local admin account (tempadmin) via PowerShell', points: 3, magnitude: 'somewhat_effective' },
+                { id: 'B', text: 'Logon to systems where j.smith has no historical access', points: 3, magnitude: 'somewhat_effective' },
+                { id: 'C', text: 'Assignment of sensitive privileges (SeDebugPrivilege, SeImpersonatePrivilege)', points: 3, magnitude: 'somewhat_effective' },
+                { id: 'D', text: 'Network logon from 192.0.2.154', points: 1, magnitude: 'least_effective' },
+                { id: 'E', text: 'All of the above', points: 0, magnitude: 'least_effective' }
               ],
               correctAnswer: ['A', 'B', 'C'],
               maxPoints: 10,
@@ -288,11 +288,11 @@ Privileges Assigned:
               question: 'What should be your IMMEDIATE containment action?',
               questionType: 'single',
               options: [
-                { id: 'A', text: 'Wait and monitor for additional activity', points: 0 },
-                { id: 'B', text: 'Disable both j.smith and tempadmin accounts immediately', points: 10 },
-                { id: 'C', text: 'Reset j.smith password only', points: 5 },
-                { id: 'D', text: 'Send an email to j.smith asking about the activity', points: 0 },
-                { id: 'E', text: 'Reboot the affected servers', points: 2 }
+                { id: 'A', text: 'Wait and monitor for additional activity', points: 0, magnitude: 'least_effective' },
+                { id: 'B', text: 'Disable both j.smith and tempadmin accounts immediately', points: 10, magnitude: 'most_effective' },
+                { id: 'C', text: 'Reset j.smith password only', points: 5, magnitude: 'moderately_effective' },
+                { id: 'D', text: 'Send an email to j.smith asking about the activity', points: 0, magnitude: 'least_effective' },
+                { id: 'E', text: 'Reboot the affected servers', points: 2, magnitude: 'somewhat_effective' }
               ],
               correctAnswer: ['B'],
               maxPoints: 10,
@@ -304,10 +304,10 @@ Privileges Assigned:
               question: 'Which systems require immediate forensic investigation? (Select all that apply)',
               questionType: 'multiple',
               options: [
-                { id: 'A', text: 'ws-desktop93.internal.domain.com (initial compromise point)', points: 3 },
-                { id: 'B', text: 'appserver.internal.domain.com (privilege escalation target)', points: 3 },
-                { id: 'C', text: 'finance-svr01.internal.domain.com (lateral movement target)', points: 3 },
-                { id: 'D', text: 'All Active Directory domain controllers', points: 1 }
+                { id: 'A', text: 'ws-desktop93.internal.domain.com (initial compromise point)', points: 3, magnitude: 'somewhat_effective' },
+                { id: 'B', text: 'appserver.internal.domain.com (privilege escalation target)', points: 3, magnitude: 'somewhat_effective' },
+                { id: 'C', text: 'finance-svr01.internal.domain.com (lateral movement target)', points: 3, magnitude: 'somewhat_effective' },
+                { id: 'D', text: 'All Active Directory domain controllers', points: 1, magnitude: 'least_effective' }
               ],
               correctAnswer: ['A', 'B', 'C'],
               maxPoints: 10,
@@ -396,11 +396,11 @@ Data Transfer: 4.2 KB`,
               question: 'How would you attempt to contain this threat?',
               questionType: 'single',
               options: [
-                { id: 'A', text: 'Immediately disable the rtu_config account', points: 5 },
-                { id: 'B', text: 'Isolate ENG-HMI-02 from the OT network', points: 10 },
-                { id: 'C', text: 'Block RTU and FRTU access from all engineering workstations temporarily', points: 8 },
-                { id: 'D', text: 'Continue monitoring to avoid operational disruption', points: 0 },
-                { id: 'E', text: 'Shut down SCADA communications to prevent further interaction', points: 3 }
+                { id: 'A', text: 'Immediately disable the rtu_config account', points: 5, magnitude: 'moderately_effective' },
+                { id: 'B', text: 'Isolate ENG-HMI-02 from the OT network', points: 10, magnitude: 'most_effective' },
+                { id: 'C', text: 'Block RTU and FRTU access from all engineering workstations temporarily', points: 8, magnitude: 'effective' },
+                { id: 'D', text: 'Continue monitoring to avoid operational disruption', points: 0, magnitude: 'least_effective' },
+                { id: 'E', text: 'Shut down SCADA communications to prevent further interaction', points: 3, magnitude: 'somewhat_effective' }
               ],
               correctAnswer: ['B'],
               maxPoints: 10,
@@ -412,11 +412,11 @@ Data Transfer: 4.2 KB`,
               question: 'What recovery actions would you consider at this stage? (Select all that apply)',
               questionType: 'multiple',
               options: [
-                { id: 'A', text: 'Verify RTU and FRTU configurations against known-good baselines', points: 3 },
-                { id: 'B', text: 'Perform integrity checks on SCADA and engineering workstations', points: 3 },
-                { id: 'C', text: 'Require manual confirmation from field teams before restoring access', points: 2 },
-                { id: 'D', text: 'Restore affected devices from backups where available', points: 2 },
-                { id: 'E', text: 'Resume operations immediately once access is blocked', points: 0 }
+                { id: 'A', text: 'Verify RTU and FRTU configurations against known-good baselines', points: 3, magnitude: 'somewhat_effective' },
+                { id: 'B', text: 'Perform integrity checks on SCADA and engineering workstations', points: 3, magnitude: 'somewhat_effective' },
+                { id: 'C', text: 'Require manual confirmation from field teams before restoring access', points: 2, magnitude: 'somewhat_effective' },
+                { id: 'D', text: 'Restore affected devices from backups where available', points: 2, magnitude: 'somewhat_effective' },
+                { id: 'E', text: 'Resume operations immediately once access is blocked', points: 0, magnitude: 'least_effective' }
               ],
               correctAnswer: ['A', 'B', 'C', 'D'],
               maxPoints: 10,
@@ -428,11 +428,11 @@ Data Transfer: 4.2 KB`,
               question: 'What escalation actions would you take? (Select all that apply)',
               questionType: 'multiple',
               options: [
-                { id: 'A', text: 'Notify OT leadership and control room management', points: 2 },
-                { id: 'B', text: 'Escalate to IT security leadership for coordinated response', points: 2 },
-                { id: 'C', text: 'Inform senior management due to operational risk', points: 3 },
-                { id: 'D', text: 'Prepare for regulatory notification if risk continues', points: 3 },
-                { id: 'E', text: 'Defer escalation until a customer impact occurs', points: 0 }
+                { id: 'A', text: 'Notify OT leadership and control room management', points: 2, magnitude: 'somewhat_effective' },
+                { id: 'B', text: 'Escalate to IT security leadership for coordinated response', points: 2, magnitude: 'somewhat_effective' },
+                { id: 'C', text: 'Inform senior management due to operational risk', points: 3, magnitude: 'somewhat_effective' },
+                { id: 'D', text: 'Prepare for regulatory notification if risk continues', points: 3, magnitude: 'somewhat_effective' },
+                { id: 'E', text: 'Defer escalation until a customer impact occurs', points: 0, magnitude: 'least_effective' }
               ],
               correctAnswer: ['A', 'B', 'C', 'D'],
               maxPoints: 10,
@@ -444,10 +444,10 @@ Data Transfer: 4.2 KB`,
               question: 'What is the most likely attack vector used to compromise ENG-HMI-02?',
               questionType: 'single',
               options: [
-                { id: 'A', text: 'Lateral movement from the initially compromised IT account (it_admin_ops)', points: 10 },
-                { id: 'B', text: 'Direct external attack on ENG-HMI-02', points: 2 },
-                { id: 'C', text: 'Insider threat from a rogue engineer', points: 3 },
-                { id: 'D', text: 'Malware infection from USB device', points: 5 }
+                { id: 'A', text: 'Lateral movement from the initially compromised IT account (it_admin_ops)', points: 10, magnitude: 'most_effective' },
+                { id: 'B', text: 'Direct external attack on ENG-HMI-02', points: 2, magnitude: 'somewhat_effective' },
+                { id: 'C', text: 'Insider threat from a rogue engineer', points: 3, magnitude: 'somewhat_effective' },
+                { id: 'D', text: 'Malware infection from USB device', points: 5, magnitude: 'moderately_effective' }
               ],
               correctAnswer: ['A'],
               maxPoints: 10,
@@ -541,10 +541,10 @@ Attacker Sophistication: HIGH
               question: 'How would you classify the overall impact of this incident?',
               questionType: 'single',
               options: [
-                { id: 'A', text: 'Low Impact: No operational disruption, limited data access', points: 2 },
-                { id: 'B', text: 'Medium Impact: Credential compromise and data exfiltration without operational impact', points: 10 },
-                { id: 'C', text: 'High Impact: Significant compromise requiring major remediation', points: 5 },
-                { id: 'D', text: 'Critical Impact: Operational disruption and safety implications', points: 0 }
+                { id: 'A', text: 'Low Impact: No operational disruption, limited data access', points: 2, magnitude: 'somewhat_effective' },
+                { id: 'B', text: 'Medium Impact: Credential compromise and data exfiltration without operational impact', points: 10, magnitude: 'most_effective' },
+                { id: 'C', text: 'High Impact: Significant compromise requiring major remediation', points: 5, magnitude: 'moderately_effective' },
+                { id: 'D', text: 'Critical Impact: Operational disruption and safety implications', points: 0, magnitude: 'least_effective' }
               ],
               correctAnswer: ['B'],
               maxPoints: 10,
@@ -556,11 +556,11 @@ Attacker Sophistication: HIGH
               question: 'Which regulatory bodies should be notified? (Select all that apply)',
               questionType: 'multiple',
               options: [
-                { id: 'A', text: 'National Grid Regulator (due to critical infrastructure impact)', points: 3 },
-                { id: 'B', text: 'Data Protection Authority (due to potential data breach)', points: 2 },
-                { id: 'C', text: 'Critical Infrastructure Protection Agency', points: 3 },
-                { id: 'D', text: 'Law Enforcement (due to suspected criminal activity)', points: 2 },
-                { id: 'E', text: 'No notification required as there was no customer impact', points: 0 }
+                { id: 'A', text: 'National Grid Regulator (due to critical infrastructure impact)', points: 3, magnitude: 'somewhat_effective' },
+                { id: 'B', text: 'Data Protection Authority (due to potential data breach)', points: 2, magnitude: 'somewhat_effective' },
+                { id: 'C', text: 'Critical Infrastructure Protection Agency', points: 3, magnitude: 'somewhat_effective' },
+                { id: 'D', text: 'Law Enforcement (due to suspected criminal activity)', points: 2, magnitude: 'somewhat_effective' },
+                { id: 'E', text: 'No notification required as there was no customer impact', points: 0, magnitude: 'least_effective' }
               ],
               correctAnswer: ['A', 'B', 'C', 'D'],
               maxPoints: 10,
@@ -572,11 +572,11 @@ Attacker Sophistication: HIGH
               question: 'What long-term security measures should be implemented? (Select all that apply)',
               questionType: 'multiple',
               options: [
-                { id: 'A', text: 'Implement network segmentation between IT and OT environments', points: 2 },
-                { id: 'B', text: 'Deploy multi-factor authentication for all privileged accounts', points: 2 },
-                { id: 'C', text: 'Enhance monitoring and alerting for OT-specific protocols', points: 2 },
-                { id: 'D', text: 'Conduct regular OT security awareness training', points: 2 },
-                { id: 'E', text: 'Implement application whitelisting on OT assets', points: 2 }
+                { id: 'A', text: 'Implement network segmentation between IT and OT environments', points: 2, magnitude: 'somewhat_effective' },
+                { id: 'B', text: 'Deploy multi-factor authentication for all privileged accounts', points: 2, magnitude: 'somewhat_effective' },
+                { id: 'C', text: 'Enhance monitoring and alerting for OT-specific protocols', points: 2, magnitude: 'somewhat_effective' },
+                { id: 'D', text: 'Conduct regular OT security awareness training', points: 2, magnitude: 'somewhat_effective' },
+                { id: 'E', text: 'Implement application whitelisting on OT assets', points: 2, magnitude: 'somewhat_effective' }
               ],
               correctAnswer: ['A', 'B', 'C', 'D', 'E'],
               maxPoints: 10,
@@ -631,7 +631,7 @@ Attacker Sophistication: HIGH
     console.log('✅ SEEDING COMPLETE!');
     console.log('='.repeat(50));
     console.log('\nTEST CREDENTIALS:');
-    console.log('Facilitator: facilitator@example.com');
+    console.log('Facilitator: facilitator@codec.com');
     console.log('Password: password123');
     console.log('\nAccess Codes: OTEX2024, PHISH01');
 

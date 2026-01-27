@@ -41,7 +41,12 @@ const PhaseQuestionSchema = new mongoose.Schema({
   options: [{
     id: String,
     text: String,
-    points: Number
+    points: Number,
+    magnitude: {
+      type: String,
+      enum: ['most_effective', 'effective', 'moderately_effective', 'somewhat_effective', 'least_effective'],
+      default: 'least_effective'
+    }
   }],
   correctAnswer: [String],
   questionType: {

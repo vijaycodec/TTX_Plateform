@@ -1,6 +1,8 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
+// import cors from 'cors'
+
 const http = require('http');
 const socketIo = require('socket.io');
 const connectDB = require('./config/db');
@@ -23,8 +25,9 @@ const server = http.createServer(app);
 // Socket.io setup
 const io = socketIo(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
-    credentials: true
+    origin: true, // Allow all origins (or specify array of allowed origins)
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE"]
   }
 });
 
@@ -38,8 +41,13 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Enable CORS
-app.use(cors());
+// Enable CORS - Allow all origins for local network access
+app.use(cors({
+  origin: true, // Allow all origins
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // Mount routers
 app.use('/api/auth', authRoutes);
@@ -51,29 +59,37 @@ app.use(errorHandler);
 
 // Socket.io connection handling
 io.on('connection', (socket) => {
-  console.log('New client connected:', socket.id);
+  console.log('✅ New client connected:', socket.id);
 
   // Join exercise room
   socket.on('joinExercise', (exerciseId) => {
     socket.join(`exercise-${exerciseId}`);
-    console.log(`Socket ${socket.id} joined exercise-${exerciseId}`);
+    console.log(`📥 Socket ${socket.id} joined exercise-${exerciseId}`);
+
+    // Log all rooms this socket is in
+    const rooms = Array.from(socket.rooms);
+    console.log(`  ➡️ Socket ${socket.id} is now in rooms:`, rooms);
   });
 
   // Join participant room
   socket.on('joinAsParticipant', (participantId) => {
     socket.join(`participant-${participantId}`);
-    console.log(`Socket ${socket.id} joined as participant-${participantId}`);
+    console.log(`📥 Socket ${socket.id} joined participant-${participantId}`);
+
+    // Log all rooms this socket is in
+    const rooms = Array.from(socket.rooms);
+    console.log(`  ➡️ Socket ${socket.id} is now in rooms:`, rooms);
   });
 
   // Handle disconnection
   socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id);
+    console.log('❌ Client disconnected:', socket.id);
   });
 });
 
 const PORT = process.env.PORT || 5000;
 
-server.listen(PORT, () => {
+server.listen(5000, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });
 
