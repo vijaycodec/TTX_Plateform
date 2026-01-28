@@ -495,7 +495,7 @@ function calculatePointsAndMagnitude(question, answer) {
     } else if (totalPoints >= 7) {
       overallMagnitude = 'effective';
     } else if (totalPoints >= 5) {
-      overallMagnitude = 'moderately_effective';
+      overallMagnitude = 'not_effective';
     } else if (totalPoints >= 2) {
       overallMagnitude = 'somewhat_effective';
     }
@@ -507,5 +507,5 @@ function calculatePointsAndMagnitude(question, answer) {
   }
 
   // For text questions or other types
-  return { pointsEarned: question.maxPoints || 5, magnitude: 'moderately_effective' };
+  return { pointsEarned: question.maxPoints || 5, magnitude: 'not_effective' };
 }

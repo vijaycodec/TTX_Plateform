@@ -120,7 +120,7 @@ Rule: IT_to_OT_Management`,
                 { id: 'B', text: 'P3 - Low Severity: Treat as a procedural deviation and seek clarification from IT administrators', points: 2, magnitude: 'somewhat_effective' },
                 { id: 'C', text: 'P2 - Medium Severity: Classify as suspicious identity misuse involving OT access and initiate investigation', points: 10, magnitude: 'most_effective' },
                 { id: 'D', text: 'P1 - High Severity: Classify as a high-severity incident due to unauthorized IT access into OT systems', points: 8, magnitude: 'effective' },
-                { id: 'E', text: 'P0 - Critical: Declare a critical incident due to potential compromise of privileged credentials with access to SCADA', points: 5, magnitude: 'moderately_effective' }
+                { id: 'E', text: 'P0 - Critical: Declare a critical incident due to potential compromise of privileged credentials with access to SCADA', points: 5, magnitude: 'not_effective' }
               ],
               correctAnswer: ['C'],
               maxPoints: 10,
@@ -150,7 +150,7 @@ Rule: IT_to_OT_Management`,
               options: [
                 { id: 'A', text: 'Immediately disable the it_admin_ops account', points: 10, magnitude: 'most_effective' },
                 { id: 'B', text: 'Continue monitoring without taking action', points: 0, magnitude: 'least_effective' },
-                { id: 'C', text: 'Call the IT department to verify the activity', points: 5, magnitude: 'moderately_effective' },
+                { id: 'C', text: 'Call the IT department to verify the activity', points: 5, magnitude: 'not_effective' },
                 { id: 'D', text: 'Shut down all OT systems as a precaution', points: 2, magnitude: 'somewhat_effective' }
               ],
               correctAnswer: ['A'],
@@ -290,7 +290,7 @@ Privileges Assigned:
               options: [
                 { id: 'A', text: 'Wait and monitor for additional activity', points: 0, magnitude: 'least_effective' },
                 { id: 'B', text: 'Disable both j.smith and tempadmin accounts immediately', points: 10, magnitude: 'most_effective' },
-                { id: 'C', text: 'Reset j.smith password only', points: 5, magnitude: 'moderately_effective' },
+                { id: 'C', text: 'Reset j.smith password only', points: 5, magnitude: 'not_effective' },
                 { id: 'D', text: 'Send an email to j.smith asking about the activity', points: 0, magnitude: 'least_effective' },
                 { id: 'E', text: 'Reboot the affected servers', points: 2, magnitude: 'somewhat_effective' }
               ],
@@ -396,7 +396,7 @@ Data Transfer: 4.2 KB`,
               question: 'How would you attempt to contain this threat?',
               questionType: 'single',
               options: [
-                { id: 'A', text: 'Immediately disable the rtu_config account', points: 5, magnitude: 'moderately_effective' },
+                { id: 'A', text: 'Immediately disable the rtu_config account', points: 5, magnitude: 'not_effective' },
                 { id: 'B', text: 'Isolate ENG-HMI-02 from the OT network', points: 10, magnitude: 'most_effective' },
                 { id: 'C', text: 'Block RTU and FRTU access from all engineering workstations temporarily', points: 8, magnitude: 'effective' },
                 { id: 'D', text: 'Continue monitoring to avoid operational disruption', points: 0, magnitude: 'least_effective' },
@@ -447,7 +447,7 @@ Data Transfer: 4.2 KB`,
                 { id: 'A', text: 'Lateral movement from the initially compromised IT account (it_admin_ops)', points: 10, magnitude: 'most_effective' },
                 { id: 'B', text: 'Direct external attack on ENG-HMI-02', points: 2, magnitude: 'somewhat_effective' },
                 { id: 'C', text: 'Insider threat from a rogue engineer', points: 3, magnitude: 'somewhat_effective' },
-                { id: 'D', text: 'Malware infection from USB device', points: 5, magnitude: 'moderately_effective' }
+                { id: 'D', text: 'Malware infection from USB device', points: 5, magnitude: 'not_effective' }
               ],
               correctAnswer: ['A'],
               maxPoints: 10,
@@ -543,7 +543,7 @@ Attacker Sophistication: HIGH
               options: [
                 { id: 'A', text: 'Low Impact: No operational disruption, limited data access', points: 2, magnitude: 'somewhat_effective' },
                 { id: 'B', text: 'Medium Impact: Credential compromise and data exfiltration without operational impact', points: 10, magnitude: 'most_effective' },
-                { id: 'C', text: 'High Impact: Significant compromise requiring major remediation', points: 5, magnitude: 'moderately_effective' },
+                { id: 'C', text: 'High Impact: Significant compromise requiring major remediation', points: 5, magnitude: 'not_effective' },
                 { id: 'D', text: 'Critical Impact: Operational disruption and safety implications', points: 0, magnitude: 'least_effective' }
               ],
               correctAnswer: ['B'],

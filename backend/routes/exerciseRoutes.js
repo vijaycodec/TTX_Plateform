@@ -13,7 +13,9 @@ const {
   toggleResponses,
   togglePhaseProgression,
   getParticipants,
-  getScores
+  getScores,
+  resetExercise,
+  resetInject
 } = require('../controllers/exerciseController');
 const { protect, facilitatorOnly } = require('../middlewares/auth');
 
@@ -53,5 +55,11 @@ router.route('/:id/participants')
 
 router.route('/:id/scores')
   .get(getScores);
+
+router.route('/:id/reset')
+  .post(resetExercise);
+
+router.route('/:id/reset-inject')
+  .post(resetInject);
 
 module.exports = router;

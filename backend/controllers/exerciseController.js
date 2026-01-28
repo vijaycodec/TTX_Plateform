@@ -582,3 +582,127 @@ exports.deleteInject = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+// @desc    Reset exercise - clear all participant responses, scores, and inject states
+// @route   POST /api/exercises/:id/reset
+// @access  Private (Facilitator)
+exports.resetExercise = async (req, res) => {
+  try {
+    const exercise = await Exercise.findById(req.params.id);
+
+    if (!exercise) {
+      return res.status(404).json({ message: 'Exercise not found' });
+    }
+
+    if (exercise.facilitator.toString() !== req.user.id.toString()) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
+    // Reset all injects back to inactive state
+    const db = require('mongoose').connection.db;
+    const ObjectId = require('mongoose').Types.ObjectId;
+
+    await db.collection('exercises').updateOne(
+      { _id: new ObjectId(req.params.id) },
+      {
+        $set: {
+          'injects.$[].isActive': false,
+          'injects.$[].releaseTime': null,
+          'injects.$[].responsesOpen': false,
+          'injects.$[].phaseProgressionLocked': false,
+          'updatedAt': new Date()
+        }
+      }
+    );
+
+    // Reset all participants - clear responses, scores, reset phase
+    await Participant.updateMany(
+      { exercise: exercise._id },
+      {
+        $set: {
+          responses: [],
+          totalScore: 0,
+          currentInject: 1,
+          currentPhase: 1,
+          lastActivity: new Date()
+        }
+      }
+    );
+
+    res.json({
+      success: true,
+      message: 'Exercise reset successfully. All responses and scores cleared.'
+    });
+  } catch (error) {
+    console.error('Error resetting exercise:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// @desc    Reset specific inject - clear responses for that inject only
+// @route   POST /api/exercises/:id/reset-inject
+// @access  Private (Facilitator)
+exports.resetInject = async (req, res) => {
+  try {
+    const { injectNumber } = req.body;
+    const exerciseId = req.params.id;
+
+    const exercise = await Exercise.findById(exerciseId);
+
+    if (!exercise) {
+      return res.status(404).json({ message: 'Exercise not found' });
+    }
+
+    if (exercise.facilitator.toString() !== req.user.id.toString()) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
+    // Reset the specific inject state
+    const db = require('mongoose').connection.db;
+    const ObjectId = require('mongoose').Types.ObjectId;
+
+    await db.collection('exercises').updateOne(
+      {
+        _id: new ObjectId(exerciseId),
+        'injects.injectNumber': parseInt(injectNumber)
+      },
+      {
+        $set: {
+          'injects.$.isActive': false,
+          'injects.$.releaseTime': null,
+          'injects.$.responsesOpen': false,
+          'injects.$.phaseProgressionLocked': false,
+          'updatedAt': new Date()
+        }
+      }
+    );
+
+    // Remove participant responses for this inject only
+    await Participant.updateMany(
+      { exercise: exercise._id },
+      {
+        $pull: {
+          responses: { injectNumber: parseInt(injectNumber) }
+        }
+      }
+    );
+
+    // Recalculate total scores for all participants
+    const participants = await Participant.find({ exercise: exercise._id });
+    for (const participant of participants) {
+      const totalScore = participant.responses.reduce((sum, r) => sum + (r.pointsEarned || 0), 0);
+      await Participant.updateOne(
+        { _id: participant._id },
+        { $set: { totalScore } }
+      );
+    }
+
+    res.json({
+      success: true,
+      message: `Inject ${injectNumber} reset successfully.`
+    });
+  } catch (error) {
+    console.error('Error resetting inject:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
